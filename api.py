@@ -74,9 +74,6 @@ class API:
         second_part = self.get_random_AZaz09(134, "_-")
         return first_part + second_part
 
-    def getTimestamp(self):
-        return time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
     def get_random_hex(self, n):
         return ''.join([random.choice('0123456789ABCDEF') for x in range(n)]).lower()
 
