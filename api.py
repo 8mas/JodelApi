@@ -3,6 +3,7 @@ import random
 import time
 import requests
 import secrets
+import hmac
 
 
 class API:
@@ -49,6 +50,18 @@ class API:
         self.access_token = token
         API.instances += 1
 
+    def generate_hmac(self, type, url, timestamp, data):
+        resource_with_parameters = url.split("https://api.go-tellm.com")[1]
+        resource = resource_with_parameters.split("?")[0]
+
+        # This format is how jodel needs it. Some requests do not need a valid mac.
+        payload = f"{type}%api.go-tellm.com%443%{resource}%%{self.latitude};{self.longitude}%{timestamp}%%{data}"
+
+        auth_code = hmac.new(self.secret,
+                             payload.encode("utf-8"),
+                             hashlib.sha1).hexdigest().upper()
+        return auth_code
+
     ########## Helper ##########
     # a bit sloppy but okay for now
     def get_random_device_id(self):
@@ -60,6 +73,9 @@ class API:
         first_part = self.get_random_AZaz09(11) + ":APA91b"
         second_part = self.get_random_AZaz09(134, "_-")
         return first_part + second_part
+
+    def getTimestamp(self):
+        return time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     def get_random_hex(self, n):
         return ''.join([random.choice('0123456789ABCDEF') for x in range(n)]).lower()
