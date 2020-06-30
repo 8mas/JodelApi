@@ -14,12 +14,14 @@ class API:
     # Android - found via reverse engineering
     secret = secrets.api_secret
     # Android - Does not really change?
-    clientID = "81e8a76e-1e02-4d17-9ba0-8a7020261b26"
+    client_id_android = "81e8a76e-1e02-4d17-9ba0-8a7020261b26"
 
     # Version - secret is bound to this / see playstore for version
     client_type = 'android_5.88.1'
 
-    def __init__(self, latitude=53, longitude=9, device_id=0, token=0):
+    def __init__(self, latitude=53, longitude=9, iid=None, device_id=None, client_id=client_id_android, city="Hamburg",
+                 country="DE", loc_accuracy="5.14", language="en-US", token=None):
+
         self.request_session = requests.session()
         self.request_session.verify = False
 
@@ -29,28 +31,47 @@ class API:
             self.request_session.proxies.update({'http': 'http://127.0.0.1:8888', 'https': 'https://127.0.0.1:8888', })
 
         # Randomize the position a bit (up to one km in each direction)
-        latseed = float(random.randint(-100000, 100000)) / 10000000
-        longseed = float(random.randint(-100000, 100000)) / 10000000
+        lat_seed = float(random.randint(-100000, 100000)) / 10000000
+        long_seed = float(random.randint(-100000, 100000)) / 10000000
 
-        self.latitude = str(latitude + latseed)
-        self.longitude = str(longitude + longseed)
+        self.latitude = str(latitude + lat_seed)
+        self.longitude = str(longitude + long_seed)
 
-        if device_id == 0:
-            device_id = self.get_random_device_id()
+        self.city = city
+        self.country = country
+        self.loc_accuracy = loc_accuracy
+        self.language = language
+        self.client_id = client_id
 
-        self.device_uid = device_id
-        self.iid = self.get_random_iid()
-        self.client_id = self.clientID
-
-        if token == 0:
+        if iid is None:
+            self.iid = API._get_random_iid()
+        if device_id is None:
+            self.device_id = API._get_random_device_id()
+        if token is None:
             pass
             # TODO generate new user
 
-        # Token der bei jeden request benutzt wird.
         self.access_token = token
         API.instances += 1
 
-    def generate_hmac(self, type, url, timestamp, data):
+    def get_access_token(self):
+        payload = {
+            "location": {
+                "city": self.city,
+                "country": self.country,
+                "loc_coordinates": {
+                    "lat": self.latitude,
+                    "lon": self.longitude
+                },
+                "loc_accuracy": self.loc_accuracy
+            },
+            "iid": self.iid,
+            "client_id": self.client_id,
+            "device_uid": self.device_id,
+            "language": self.language
+        }
+
+    def _generate_hmac(self, type, url, timestamp, data):
         resource_with_parameters = url.split("https://api.go-tellm.com")[1]
         resource = resource_with_parameters.split("?")[0]
 
@@ -62,25 +83,42 @@ class API:
                              hashlib.sha1).hexdigest().upper()
         return auth_code
 
+    def _get(self, url, **kwargs):
+        pass
+
+    def _post(self):
+        pass
+
+    def _put(self):
+        pass
+
+    def _delete(self):
+        pass
+
     ########## Helper ##########
     # a bit sloppy but okay for now
-    def get_random_device_id(self):
-        plainUID = self.get_random_hex(40)
-        return hashlib.sha256(plainUID.encode()).hexdigest()
 
-    # Seems to be an ad id?
-    def get_random_iid(self):
-        first_part = self.get_random_AZaz09(11) + ":APA91b"
-        second_part = self.get_random_AZaz09(134, "_-")
-        return first_part + second_part
-
-    def get_random_hex(self, n):
+    @staticmethod
+    def _get_random_hex(n):
         return ''.join([random.choice('0123456789ABCDEF') for x in range(n)]).lower()
 
-    def get_random_AZaz09(self, n, extra_chars=""):
+    @staticmethod
+    def _get_random_device_id():
+        plainUID = API._get_random_hex(40)
+        return hashlib.sha256(plainUID.encode()).hexdigest()
+
+    @staticmethod
+    def _get_random_iid():
+        # Seems to be an ad id?
+        first_part = API._get_random_AZaz09(11) + ":APA91b"
+        second_part = API._get_random_AZaz09(134, "_-")
+        return first_part + second_part
+
+    @staticmethod
+    def _get_random_AZaz09(n, extra_chars=""):
         return ''.join(
             [random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890' + extra_chars) for _ in
              range(n)])
 
-    def log(self, msg):
+    def _log(self, msg):
         print('[%s]\n%s\n' % (time.strftime('%H:%M:%S'), msg.encode('utf-8')))
