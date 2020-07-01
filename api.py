@@ -19,7 +19,8 @@ class API:
     client_id_android = "81e8a76e-1e02-4d17-9ba0-8a7020261b26"
 
     # Version - secret is bound to this / see playstore for version
-    client_type = "android_5.88.1"
+    version = "5.88.1"
+    client_type = f"android_{version}"
 
     def __init__(self, latitude=53, longitude=9, iid=None, device_id=None, client_id=client_id_android, city="Hamburg",
                  country="DE", loc_accuracy=7.41, language="en-US", token=None):
@@ -45,20 +46,17 @@ class API:
         self.language = language
         self.client_id = client_id
 
-        if iid is None:
+        self.iid = iid
+        if self.iid is None:
             self.iid = API._get_random_iid()
-        else:
-            self.iid = iid
 
-        if device_id is None:
+        self.device_id = device_id
+        if self.device_id is None:
             self.device_id = API._get_random_device_id()
-        else:
-            self.device_id = device_id
 
-        if token is None:
+        self.access_token = token
+        if self.access_token is None:
             self.access_token = self.get_access_token()
-        else:
-            self.access_token = token
 
         API.instances += 1
 
@@ -70,8 +68,8 @@ class API:
                 "city": self.city,
                 "country": self.country,
                 "loc_coordinates": {
-                    "lng": self.latitude,
-                    "lat": self.longitude
+                    "lat": self.latitude,
+                    "lng": self.longitude
                 },
                 "loc_accuracy": self.loc_accuracy
             },
@@ -82,8 +80,19 @@ class API:
         }
         json_string = json.dumps(payload)
         response = self._post("/api/v2/users", json_string)
-
+        # Save response
         return response["access_token"]
+
+    def get_posts(self, from_start=0, to_end=60, channel=None):
+        api_version = "v3" if channel else "v3"
+        feed = "channel" if channel else "location"
+
+        params = {
+            "channel": channel
+        }
+
+        resource = f"/api/{api_version}/posts/{feed}/combo"
+        self._get(resource, params)
 
     def _generate_hmac(self, request_type, resource, timestamp, data: str):
         # This format is how jodel needs it. Some requests do not need a valid mac.
@@ -105,19 +114,29 @@ class API:
             "X-Authorization": f"HMAC {mac}",
             "X-Api-Version": API.api_version,
             "X-Client-Type": self.client_type,
-            "User-Agent": "Jodel/4.55 (iPad; iOS 11.1; Scale/2.10)",
+            "User-Agent": f"Jodel/{self.version} (iPad; iOS 11.1; Scale/2.10)",
             "Content-Type": "application/json"
         }
 
+        if self.access_token is not None:
+            header_dict["Authorization"] = "Bearer " + self.access_token
+
         self.request_session.headers.update(header_dict)
 
-    # TODO: Response handling: Errors etc
     def _handle_response(self, response):
-        print(response.content)
-        return response
+        response_dict = json.loads(response.content.decode())
+        code = response.status_code
+        if code == 477:
+            raise SigningException(response_dict)
 
-    def _get(self, url, **kwargs):
-        pass
+        return response_dict
+
+    def _get(self, resource, params={}):
+        url = API.URL + resource
+
+        self._prepare_request("GET", resource, {})
+        response = self.request_session.get(url, params=params)
+        return self._handle_response(response)
 
     def _post(self, resource, payload: str):
         url = API.URL + resource
@@ -165,5 +184,10 @@ class API:
         print("[%s]\n%s\n" % (time.strftime("%H:%M:%S"), msg.encode("utf-8")))
 
 
+class SigningException(Exception):
+    pass
+
+
 if __name__ == "__main__":
-    API()
+    t = API()
+    t.get_posts(channel="informatik")
