@@ -5,10 +5,11 @@ import requests
 import secrets
 import hmac
 import json
+import JodlePersister as Jpersister
 
 
-class API:
-    debug = True
+class JodelApi:
+    debug = False
     instances = 0
     URL = "https://api.go-tellm.com"
     api_version = "0.2"
@@ -29,7 +30,7 @@ class API:
         self.request_session.verify = False
 
         # Use local proxy
-        if API.debug:
+        if JodelApi.debug:
             print("Using proxy")
             self.request_session.proxies.update({"http": "http://127.0.0.1:8888", "https": "https://127.0.0.1:8888", })
 
@@ -48,17 +49,17 @@ class API:
 
         self.iid = iid
         if self.iid is None:
-            self.iid = API._get_random_iid()
+            self.iid = JodelApi._get_random_iid()
 
         self.device_id = device_id
         if self.device_id is None:
-            self.device_id = API._get_random_device_id()
+            self.device_id = JodelApi._get_random_device_id()
 
         self.access_token = token
         if self.access_token is None:
             self.access_token = self.get_access_token()
 
-        API.instances += 1
+        JodelApi.instances += 1
 
     def get_access_token(self):
         # Get new access token
@@ -80,7 +81,10 @@ class API:
         }
         json_string = json.dumps(payload)
         response = self._post("/api/v2/users", json_string)
-        # Save response
+
+        Jpersister.add_jodel_account(response["access_token"], response["refresh_token"], response["distinct_id"],
+                                     self.device_id, response["expiration_date"])
+
         return response["access_token"]
 
     def get_posts(self, from_start=0, to_end=60, channel=None):
@@ -105,14 +109,14 @@ class API:
 
     # Set headers for request
     def _prepare_request(self, request_type, resource, data):
-        timestamp = API._get_timestamp()
+        timestamp = JodelApi._get_timestamp()
         mac = self._generate_hmac(request_type, resource, timestamp, data)
 
         header_dict = {
             "X-Timestamp": timestamp,
             "X-Location": f"{self.latitude};{self.longitude}",
             "X-Authorization": f"HMAC {mac}",
-            "X-Api-Version": API.api_version,
+            "X-Api-Version": JodelApi.api_version,
             "X-Client-Type": self.client_type,
             "User-Agent": f"Jodel/{self.version} (iPad; iOS 11.1; Scale/2.10)",
             "Content-Type": "application/json"
@@ -131,15 +135,18 @@ class API:
 
         return response_dict
 
-    def _get(self, resource, params={}):
-        url = API.URL + resource
+    def _get(self, resource, params=None):
+        if params is None:
+            params = {}
+
+        url = JodelApi.URL + resource
 
         self._prepare_request("GET", resource, {})
         response = self.request_session.get(url, params=params)
         return self._handle_response(response)
 
     def _post(self, resource, payload: str):
-        url = API.URL + resource
+        url = JodelApi.URL + resource
 
         self._prepare_request("POST", resource, payload)
         response = self.request_session.post(url, payload)
@@ -160,14 +167,14 @@ class API:
 
     @staticmethod
     def _get_random_device_id():
-        plainUID = API._get_random_hex(40)
-        return hashlib.sha256(plainUID.encode()).hexdigest()
+        plain_uid = JodelApi._get_random_hex(40)
+        return hashlib.sha256(plain_uid.encode()).hexdigest()
 
     @staticmethod
     def _get_random_iid():
         # Seems to be an ad id?
-        first_part = API._get_random_AZaz09(11) + ":APA91b"
-        second_part = API._get_random_AZaz09(134, "_-")
+        first_part = JodelApi._get_random_AZaz09(11) + ":APA91b"
+        second_part = JodelApi._get_random_AZaz09(134, "_-")
         return first_part + second_part
 
     @staticmethod
@@ -189,5 +196,5 @@ class SigningException(Exception):
 
 
 if __name__ == "__main__":
-    t = API()
+    t = JodelApi()
     t.get_posts(channel="informatik")
