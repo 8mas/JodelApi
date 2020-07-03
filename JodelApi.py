@@ -57,11 +57,11 @@ class JodelApi:
 
         self.access_token = token
         if self.access_token is None:
-            self.access_token = self.get_access_token()
+            self.access_token = self.create_new_account()
 
         JodelApi.instances += 1
 
-    def get_access_token(self):
+    def create_new_account(self):
         # Get new access token
         # TODO: handling of renew token etc.
         payload = {
@@ -84,7 +84,6 @@ class JodelApi:
 
         Jpersister.add_jodel_account(response["access_token"], response["refresh_token"], response["distinct_id"],
                                      self.device_id, response["expiration_date"])
-
         return response["access_token"]
 
     def get_posts(self, from_start=0, to_end=60, channel=None):

@@ -22,7 +22,7 @@ def add_jodel_account(access_token: str, refresh_token: str, distinct_id: str, d
     db.close()
 
 
-def load_jodel_account(count: int) -> list:
+def get_jodel_account(count: int) -> list:
     db = sqlite3.connect("jodel.db")
     cursor = db.cursor()
     cursor.execute('''SELECT * FROM jodel LIMIT (?)''', (count,))
