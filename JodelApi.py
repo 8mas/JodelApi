@@ -9,7 +9,7 @@ import JodlePersister as Jpersister
 
 
 class JodelApi:
-    debug = False
+    debug = True
     instances = 0
     URL = "https://api.go-tellm.com"
     api_version = "0.2"
@@ -62,8 +62,6 @@ class JodelApi:
         JodelApi.instances += 1
 
     def create_new_account(self):
-        # Get new access token
-        # TODO: handling of renew token etc.
         payload = {
             "location": {
                 "city": self.city,
@@ -95,7 +93,13 @@ class JodelApi:
         }
 
         resource = f"/api/{api_version}/posts/{feed}/combo"
-        self._get(resource, params)
+        return self._get(resource, params)
+
+    def upvote_post(self, post_id: str):
+        self._put(f"/api/v2/posts/{post_id}/upvote")
+
+    def downvote_post(self, post_id: str):
+        self._put(f"/api/v2/posts/{post_id}/downvote")
 
     def _generate_hmac(self, request_type, resource, timestamp, data: str):
         # This format is how jodel needs it. Some requests do not need a valid mac.
@@ -151,8 +155,15 @@ class JodelApi:
         response = self.request_session.post(url, payload)
         return self._handle_response(response)
 
-    def _put(self):
-        pass
+    def _put(self, resource, params=None):
+        url = JodelApi.URL + resource
+
+        if params is None:
+            params = {}
+
+        self._prepare_request("PUT", resource, params)
+        response = self.request_session.put(url, params=params)
+        return self._handle_response(response)
 
     def _delete(self):
         pass
@@ -196,4 +207,4 @@ class SigningException(Exception):
 
 if __name__ == "__main__":
     t = JodelApi()
-    t.get_posts(channel="informatik")
+    t.get_posts()

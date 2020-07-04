@@ -1,9 +1,9 @@
 Upvote:
-PUT%api.go-tellm.com%443%/api/v2/posts/POSTID/upvote%DEVICEID%LAT;LON%2020-05-05T14:35:34Z%explorer%false%home%false%isRecommended%false%{}
+PUT%api.go-tellm.com%443%/api/v2/posts/POSTID/upvote%TOKEN%LAT;LON%2020-05-05T14:35:34Z%explorer%false%home%false%isRecommended%false%{}
 Downvote:
-PUT%api.go-tellm.com%443%/api/v2/posts/POSTID/downvote%DEVICEID%LAT;LON%2020-05-05T14:35:34Z%explorer%false%home%false%isRecommended%false%{}
+PUT%api.go-tellm.com%443%/api/v2/posts/POSTID/downvote%TOKEN%LAT;LON%2020-05-05T14:35:34Z%explorer%false%home%false%isRecommended%false%{}
 Enter channel
-PUT%api.go-tellm.com%443%/api/v3/user/followChannel%DEVICEID%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%
-GET%api.go-tellm.com%443%/api/v3/user/channelMeta%DEVICEID%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%explorer%false%home%false%
+PUT%api.go-tellm.com%443%/api/v3/user/followChannel%TOKEN%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%
+GET%api.go-tellm.com%443%/api/v3/user/channelMeta%TOKEN%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%explorer%false%home%false%
 Leave channel:
-GET%api.go-tellm.com%443%/api/v3/user/unfollowChannel%DEVICEID%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%
+GET%api.go-tellm.com%443%/api/v3/user/unfollowChannel%TOKEN%LAT;LON%2020-07-05T14:39:30Z%channel%horrordatestorys%
